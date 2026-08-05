@@ -209,9 +209,17 @@ function showMsg(text, type){
 }
 
 // Decodifica %uXXXX (padrão de unescape() do JS para caracteres unicode) e depois %XX padrão
+// Decodifica %uXXXX (padrão de unescape() do JS para caracteres unicode) e depois %XX padrão
+// Versão compatível com o unescape() clássico (não usa decodeURIComponent)
 function jsUnescape(str){
-  str = str.replace(/%u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex,16)));
-  str = decodeURIComponent(str.replace(/%(?![0-9a-fA-F]{2})/g, '%25'));
+  // 1. %uXXXX (unicode)
+  str = str.replace(/%u([0-9a-fA-F]{4})/gi, (_, hex) => 
+    String.fromCharCode(parseInt(hex, 16))
+  );
+  // 2. %XX (bytes) — igual ao unescape() original
+  str = str.replace(/%([0-9a-fA-F]{2})/gi, (_, hex) => 
+    String.fromCharCode(parseInt(hex, 16))
+  );
   return str;
 }
 
