@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desofuscador de HTML</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+  :root{
+    --bg:#0d1117;
+    --panel:#131a22;
+    --line:#1f2a35;
+    --line-bright:#2b3946;
+    --text:#dbe4ec;
+    --dim:#7c8b99;
+    --amber:#ffb454;
+    --green:#5fd98a;
+    --red:#ff6b6b;
+    --mono:'JetBrains Mono', monospace;
+    --head:'Space Grotesk', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1180px; margin:0 auto;}
+
+  header{
+    display:flex; align-items:baseline; justify-content:space-between;
+    flex-wrap:wrap; gap:10px 20px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:18px; margin-bottom:22px;
+  }
+  .brand{display:flex; align-items:baseline; gap:12px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--green); box-shadow:0 0 10px var(--green); display:inline-block; transform:translateY(-1px);}
+  h1{
+    font-family:var(--head); font-weight:700; font-size:1.3rem;
+    letter-spacing:.3px;
+  }
+  .sub{color:var(--dim); font-size:.78rem; letter-spacing:.4px;}
+
+  .status-line{font-size:.72rem; color:var(--dim); letter-spacing:.4px;}
+  .status-line b{color:var(--text); font-weight:600;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  @media (max-width: 860px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    display:flex; flex-direction:column;
+    min-height:480px;
+    overflow:hidden;
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:11px 14px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,.02), transparent);
+  }
+  .panel-head .label{
+    font-family:var(--head); font-weight:600; font-size:.72rem;
+    letter-spacing:1.5px; text-transform:uppercase; color:var(--dim);
+  }
+  .panel-head .count{font-size:.68rem; color:var(--dim);}
+
+  textarea{
+    flex:1; resize:none; border:none; outline:none;
+    background:transparent; color:var(--text);
+    font-family:var(--mono); font-size:.82rem; line-height:1.55;
+    padding:14px; width:100%;
+    tab-size:2;
+  }
+  textarea::placeholder{color:#48566380;}
+  pre#outputCode{
+    flex:1; margin:0; padding:14px; overflow:auto;
+    font-family:var(--mono); font-size:.82rem; line-height:1.55;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  pre#outputCode.empty{color:#48566380;}
+
+  .toolbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    margin:16px 0 6px;
+  }
+  button{
+    font-family:var(--mono); font-size:.76rem; font-weight:600;
+    letter-spacing:.5px; text-transform:uppercase;
+    border-radius:7px; padding:10px 18px;
+    cursor:pointer; border:1px solid var(--line-bright);
+    background:#1a232c; color:var(--text);
+    transition:.15s border-color, .15s transform;
+  }
+  button:hover{border-color:var(--amber);}
+  button:active{transform:translateY(1px);}
+  button.primary{
+    background:var(--amber); color:#1a1206; border-color:var(--amber);
+  }
+  button.primary:hover{filter:brightness(1.08);}
+  button:disabled{opacity:.35; cursor:not-allowed;}
+  button.small{padding:6px 10px; font-size:.66rem;}
+
+  .msg{
+    font-size:.75rem; letter-spacing:.3px; padding:8px 0 0;
+    display:none;
+  }
+  .msg.show{display:block;}
+  .msg.ok{color:var(--green);}
+  .msg.err{color:var(--red);}
+
+  .hint{
+    margin-top:26px; border-top:1px dashed var(--line); padding-top:16px;
+    color:var(--dim); font-size:.74rem; line-height:1.7;
+  }
+  .hint b{color:var(--text);}
+  .hint code{
+    background:#1a232c; border:1px solid var(--line-bright);
+    padding:1px 6px; border-radius:4px; color:var(--amber); font-size:.72rem;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <span class="dot"></span>
+      <div>
+        <h1>Desofuscador de HTML</h1>
+        <div class="sub">unescape() · percent-encoding · atob() / base64</div>
+      </div>
+    </div>
+    <div class="status-line" id="statusLine">Aguardando entrada&hellip;</div>
+  </header>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="label">Entrada (ofuscado)</span>
+        <span class="count" id="inCount">0 caracteres</span>
+      </div>
+      <textarea id="inputArea" placeholder="Cole aqui o &lt;script&gt; ofuscado, ex:
+document.write(unescape('%3C%21DOCTYPE...'));
+
+ou
+
+document.write(atob('PCFET0NUWVBF...'));"></textarea>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="label">Saída (código limpo)</span>
+        <span class="count" id="outCount">0 caracteres</span>
+      </div>
+      <pre id="outputCode" class="empty">O resultado decodificado aparece aqui.</pre>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" id="decodeBtn">Decodificar</button>
+    <button id="copyBtn" disabled>Copiar resultado</button>
+    <button id="downloadBtn" disabled>Baixar .html</button>
+    <button id="clearBtn">Limpar</button>
+  </div>
+  <div class="msg" id="msgBox"></div>
+
+  <div class="hint">
+    <b>Como funciona:</b> a maioria dos geradores tipo "html-code-generator.com" só embrulha o HTML real dentro de <code>document.write(unescape('...'))</code> (percent-encoding, <code>%3C</code> = <code>&lt;</code>) ou <code>document.write(atob('...'))</code> (base64). Isso não é criptografia — é reversível sem chave nenhuma. Cole o script inteiro (com ou sem as tags <code>&lt;script&gt;</code>) e a ferramenta detecta automaticamente qual dos dois formatos foi usado.
+  </div>
+
+</div>
+
+<script>
+const inputArea   = document.getElementById('inputArea');
+const outputCode  = document.getElementById('outputCode');
+const decodeBtn   = document.getElementById('decodeBtn');
+const copyBtn     = document.getElementById('copyBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const clearBtn    = document.getElementById('clearBtn');
+const msgBox      = document.getElementById('msgBox');
+const inCount     = document.getElementById('inCount');
+const outCount    = document.getElementById('outCount');
+const statusLine  = document.getElementById('statusLine');
+
+let lastDecoded = '';
+
+function updateCounts(){
+  inCount.textContent = inputArea.value.length.toLocaleString('pt-BR') + ' caracteres';
+  outCount.textContent = lastDecoded.length.toLocaleString('pt-BR') + ' caracteres';
+}
+inputArea.addEventListener('input', updateCounts);
+updateCounts();
+
+function showMsg(text, type){
+  msgBox.textContent = text;
+  msgBox.className = 'msg show ' + type;
+  clearTimeout(showMsg._t);
+  showMsg._t = setTimeout(()=>{ msgBox.classList.remove('show'); }, 4000);
+}
+
+// Decodifica %uXXXX (padrão de unescape() do JS para caracteres unicode) e depois %XX padrão
+function jsUnescape(str){
+  str = str.replace(/%u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex,16)));
+  str = decodeURIComponent(str.replace(/%(?![0-9a-fA-F]{2})/g, '%25'));
+  return str;
+}
+
+function tryBase64Decode(str){
+  const cleaned = str.trim();
+  // valida formato base64 grosseiramente
+  if (!/^[A-Za-z0-9+/=\s]+$/.test(cleaned)) return null;
+  try{
+    const binary = atob(cleaned.replace(/\s+/g,''));
+    // trata como UTF-8
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  }catch(e){ return null; }
+}
+
+function extractPayload(raw){
+  // tenta achar unescape('...') ou atob('...') dentro do texto colado
+  let m = raw.match(/unescape\(\s*(['"])([\s\S]*?)\1\s*\)/);
+  if (m) return { type:'unescape', payload:m[2] };
+
+  m = raw.match(/atob\(\s*(['"])([\s\S]*?)\1\s*\)/);
+  if (m) return { type:'atob', payload:m[2] };
+
+  // se não achou padrão, assume que o usuário colou só a string bruta
+  return { type:'raw', payload: raw.trim().replace(/^['"]|['"]$/g,'') };
+}
+
+function decodeAll(){
+  const raw = inputArea.value;
+  if (!raw.trim()){
+    showMsg('Cole algum código ofuscado primeiro.', 'err');
+    return;
+  }
+
+  const { type, payload } = extractPayload(raw);
+  let result = null;
+  let usedMethod = '';
+
+  if (type === 'unescape'){
+    try{ result = jsUnescape(payload); usedMethod = 'unescape() / percent-encoding'; }
+    catch(e){ result = null; }
+  } else if (type === 'atob'){
+    result = tryBase64Decode(payload);
+    usedMethod = 'atob() / base64';
+  } else {
+    // raw: tenta detectar automaticamente
+    if (/%[0-9a-fA-F]{2}/.test(payload) || /%u[0-9a-fA-F]{4}/.test(payload)){
+      try{ result = jsUnescape(payload); usedMethod = 'unescape() / percent-encoding (auto)'; }
+      catch(e){ result = null; }
+    }
+    if (result === null){
+      const b64 = tryBase64Decode(payload);
+      if (b64){ result = b64; usedMethod = 'atob() / base64 (auto)'; }
+    }
+  }
+
+  if (result === null || result === ''){
+    outputCode.textContent = 'Não consegui identificar o formato de ofuscação. Cole o script completo (incluindo unescape(...) ou atob(...)) ou a string bruta codificada.';
+    outputCode.classList.add('empty');
+    lastDecoded = '';
+    copyBtn.disabled = true;
+    downloadBtn.disabled = true;
+    statusLine.textContent = 'Formato não reconhecido';
+    showMsg('Não foi possível decodificar automaticamente.', 'err');
+    updateCounts();
+    return;
+  }
+
+  lastDecoded = result;
+  outputCode.textContent = result;
+  outputCode.classList.remove('empty');
+  copyBtn.disabled = false;
+  downloadBtn.disabled = false;
+  statusLine.innerHTML = 'Detectado: <b>' + usedMethod + '</b>';
+  showMsg('Decodificado com sucesso.', 'ok');
+  updateCounts();
+}
+
+decodeBtn.addEventListener('click', decodeAll);
+
+copyBtn.addEventListener('click', async () => {
+  if (!lastDecoded) return;
+  try{
+    await navigator.clipboard.writeText(lastDecoded);
+    showMsg('Copiado para a área de transferência.', 'ok');
+  }catch(e){
+    showMsg('Não foi possível copiar automaticamente. Selecione o texto manualmente.', 'err');
+  }
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!lastDecoded) return;
+  const blob = new Blob([lastDecoded], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'decodificado.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showMsg('Download iniciado.', 'ok');
+});
+
+clearBtn.addEventListener('click', () => {
+  inputArea.value = '';
+  lastDecoded = '';
+  outputCode.textContent = 'O resultado decodificado aparece aqui.';
+  outputCode.classList.add('empty');
+  copyBtn.disabled = true;
+  downloadBtn.disabled = true;
+  statusLine.textContent = 'Aguardando entrada…';
+  updateCounts();
+});
+</script>
+</body>
+</html>
